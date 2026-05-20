@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼豆后台管理 🧩</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+    background: #f8f5ff;
+    min-height: 100vh;
+  }
+  /* LOGIN */
+  .login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #fff0f5 0%, #f3f0ff 100%);
+  }
+  .login-card {
+    background: white;
+    border-radius: 24px;
+    padding: 36px 28px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 8px 32px rgba(168,85,247,0.12);
+    border: 1.5px solid #f3e8ff;
+    text-align: center;
+  }
+  .login-card .emoji { font-size: 48px; margin-bottom: 12px; }
+  .login-card h2 { font-size: 20px; font-weight: 700; color: #7c3aed; margin-bottom: 4px; }
+  .login-card p { font-size: 13px; color: #888; margin-bottom: 24px; }
+  .login-card input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9d5ff;
+    border-radius: 12px;
+    font-size: 16px;
+    text-align: center;
+    letter-spacing: 4px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .login-card input:focus { border-color: #7c3aed; }
+  .login-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #7c3aed, #d63384);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .login-btn:hover { opacity: 0.9; }
+  .login-error {
+    font-size: 13px;
+    color: #ef4444;
+    margin-top: 10px;
+    display: none;
+  }
+
+  /* MAIN */
+  .main-screen { display: none; }
+  .topbar {
+    background: white;
+    border-bottom: 1px solid #e9d5ff;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-title { display: flex; align-items: center; gap: 8px; }
+  .topbar-title h1 { font-size: 16px; font-weight: 700; color: #7c3aed; }
+  .logout-btn {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+  }
+
+  .content { padding: 16px; max-width: 900px; margin: 0 auto; }
+
+  /* STATS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    background: white;
+    border-radius: 14px;
+    padding: 14px;
+    border: 1.5px solid #f0f0f0;
+  }
+  .stat-card .stat-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .stat-card .stat-value { font-size: 24px; font-weight: 800; }
+  .stat-card.purple .stat-value { color: #7c3aed; }
+  .stat-card.pink .stat-value { color: #d63384; }
+  .stat-card.green .stat-value { color: #16a34a; }
+  .stat-card.amber .stat-value { color: #d97706; }
+
+  /* FILTERS */
+  .filter-bar {
+    background: white;
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 14px;
+    border: 1.5px solid #f0f0f0;
+  }
+  .search-box {
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .search-box input:focus { border-color: #7c3aed; }
+  .search-box .search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+  }
+  .filter-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    padding: 6px 12px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    color: #555;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: white;
+  }
+
+  /* BOOKING CARDS */
+  .booking-list { display: flex; flex-direction: column; gap: 10px; }
+  .booking-card {
+    background: white;
+    border-radius: 16px;
+    padding: 14px 16px;
+    border: 1.5px solid #f0f0f0;
+    transition: border-color 0.2s;
+  }
+  .booking-card:hover { border-color: #c4b5fd; }
+  .booking-card.status-pending { border-left: 4px solid #f59e0b; }
+  .booking-card.status-confirmed { border-left: 4px solid #3b82f6; }
+  .booking-card.status-completed { border-left: 4px solid #22c55e; }
+  .booking-card.status-cancelled { border-left: 4px solid #ef4444; opacity: 0.65; }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .customer-info .name { font-size: 15px; font-weight: 700; color: #222; }
+  .customer-info .phone { font-size: 12px; color: #888; margin-top: 2px; }
+
+  .status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-confirmed { background: #dbeafe; color: #1e40af; }
+  .badge-completed { background: #dcfce7; color: #14532d; }
+  .badge-cancelled { background: #fee2e2; color: #7f1d1d; }
+
+  .card-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .detail-item .detail-label { font-size: 10px; color: #aaa; margin-bottom: 1px; }
+  .detail-item .detail-value { font-size: 13px; font-weight: 600; color: #333; }
+  .detail-item .amount-val { color: #d63384; }
+
+  .card-notes {
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 10px;
+    border: 1px solid #f0f0f0;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1.5px solid;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:active { transform: scale(0.96); }
+  .btn-confirm { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+  .btn-complete { border-color: #22c55e; color: #15803d; background: #f0fdf4; }
+  .btn-cancel { border-color: #ef4444; color: #dc2626; background: #fef2f2; }
+  .btn-delete { border-color: #9ca3af; color: #6b7280; background: #f9fafb; }
+  .btn-pending { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #aaa;
+  }
+  .empty-state .empty-emoji { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  .loading-state {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    font-size: 14px;
+  }
+
+  .results-count {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  .toast {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #22c55e;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.error { background: #ef4444; }
+
+  .refresh-btn {
+    background: white;
+    border: 1.5px solid #e9d5ff;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #7c3aed;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  @media (min-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    .card-details { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="emoji">🔐</div>
+    <h2>老板登录</h2>
+    <p>请输入后台管理密码</p>
+    <input type="password" id="passwordInput" placeholder="输入密码" onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="login-btn" onclick="doLogin()">进入后台</button>
+    <div class="login-error" id="loginError">❌ 密码错误，请重试</div>
+  </div>
+</div>
+
+<!-- MAIN SCREEN -->
+<div class="main-screen" id="mainScreen">
+  <div class="topbar">
+    <div class="topbar-title">
+      <span style="font-size:22px">🧩</span>
+      <h1>拼豆预约管理</h1>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="refresh-btn" onclick="loadBookings()">🔄 刷新</button>
+      <button class="logout-btn" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card purple">
+        <div class="stat-label">今日预约</div>
+        <div class="stat-value" id="statToday">-</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-label">待确认</div>
+        <div class="stat-value" id="statPending">-</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">本周已完成</div>
+        <div class="stat-value" id="statCompleted">-</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">本周收入</div>
+        <div class="stat-value" id="statRevenue">-</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="搜索姓名或电话..." oninput="filterBookings()" />
+      </div>
+      <div class="filter-tabs">
+        <button class="tab-btn active" onclick="setFilter('all', this)">全部</button>
+        <button class="tab-btn" onclick="setFilter('today', this)">今天</button>
+        <button class="tab-btn" onclick="setFilter('tomorrow', this)">明天</button>
+        <button class="tab-btn" onclick="setFilter('week', this)">本周</button>
+        <button class="tab-btn" onclick="setFilter('pending', this)">待确认</button>
+        <button class="tab-btn" onclick="setFilter('confirmed', this)">已确认</button>
+      </div>
+    </div>
+
+    <div class="results-count" id="resultsCount"></div>
+
+    <!-- Booking List -->
+    <div class="booking-list" id="bookingList">
+      <div class="loading-state">⏳ 加载中...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================================
+  // ⚠️  请替换以下值
+  // ============================================================
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+  const ADMIN_PASSWORD = 'pinbead2024'; // 修改为你的密码
+  // ============================================================
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let allBookings = [];
+  let currentFilter = 'all';
+
+  // ---- LOGIN ----
+  function doLogin() {
+    const pw = document.getElementById('passwordInput').value;
+    if (pw === ADMIN_PASSWORD) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainScreen').style.display = 'block';
+      loadBookings();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('passwordInput').value = '';
+    }
+  }
+
+  function doLogout() {
+    document.getElementById('mainScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').style.display = 'none';
+  }
+
+  // ---- LOAD DATA ----
+  async function loadBookings() {
+    document.getElementById('bookingList').innerHTML = '<div class="loading-state">⏳ 加载中...</div>';
+    const { data, error } = await db
+      .from('bookings')
+      .select('*')
+      .order('booking_date', { ascending: true })
+      .order('booking_time', { ascending: true });
+
+    if (error) {
+      showToast('❌ 加载失败: ' + error.message, true);
+      document.getElementById('bookingList').innerHTML = '<div class="empty-state"><div class="empty-emoji">⚠️</div><p>加载失败，请检查 Supabase 设置</p></div>';
+      return;
+    }
+    allBookings = data || [];
+    updateStats();
+    filterBookings();
+  }
+
+  // ---- STATS ----
+  function updateStats() {
+    const today = getTodayStr();
+    const weekDates = getWeekDates();
+
+    const todayBookings = allBookings.filter(b => b.booking_date === today);
+    const pending = allBookings.filter(b => b.status === 'pending');
+    const weekCompleted = allBookings.filter(b =>
+      b.status === 'completed' &&
+      b.booking_date >= weekDates.start &&
+      b.booking_date <= weekDates.end
+    );
+    const weekRevenue = allBookings
+      .filter(b => b.status !== 'cancelled' && b.booking_date >= weekDates.start && b.booking_date <= weekDates.end)
+      .reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    document.getElementById('statToday').textContent = todayBookings.length;
+    document.getElementById('statPending').textContent = pending.length;
+    document.getElementById('statCompleted').textContent = weekCompleted.length;
+    document.getElementById('statRevenue').textContent = 'RM' + weekRevenue;
+  }
+
+  // ---- FILTER ----
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterBookings();
+  }
+
+  function filterBookings() {
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+    const today = getTodayStr();
+    const tomorrow = getTomorrowStr();
+    const weekDates = getWeekDates();
+
+    let filtered = [...allBookings];
+
+    if (currentFilter === 'today') {
+      filtered = filtered.filter(b => b.booking_date === today);
+    } else if (currentFilter === 'tomorrow') {
+      filtered = filtered.filter(b => b.booking_date === tomorrow);
+    } else if (currentFilter === 'week') {
+      filtered = filtered.filter(b => b.booking_date >= weekDates.start && b.booking_date <= weekDates.end);
+    } else if (currentFilter === 'pending') {
+      filtered = filtered.filter(b => b.status === 'pending');
+    } else if (currentFilter === 'confirmed') {
+      filtered = filtered.filter(b => b.status === 'confirmed');
+    }
+
+    if (search) {
+      filtered = filtered.filter(b =>
+        (b.customer_name || '').toLowerCase().includes(search) ||
+        (b.phone || '').toLowerCase().includes(search)
+      );
+    }
+
+    document.getElementById('resultsCount').textContent = `共 ${filtered.length} 条预约`;
+    renderBookings(filtered);
+  }
+
+  // ---- RENDER ----
+  function renderBookings(bookings) {
+    const list = document.getElementById('bookingList');
+    if (bookings.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-emoji">🔍</div><p>暂无预约记录</p></div>`;
+      return;
+    }
+
+    const statusMap = {
+      pending: { label: '待确认', cls: 'badge-pending' },
+      confirmed: { label: '已确认', cls: 'badge-confirmed' },
+      completed: { label: '已完成', cls: 'badge-completed' },
+      cancelled: { label: '已取消', cls: 'badge-cancelled' }
+    };
+
+    list.innerHTML = bookings.map(b => {
+      const st = statusMap[b.status] || statusMap['pending'];
+      const timeStr = (b.booking_time || '').substring(0, 5);
+      const dateObj = new Date(b.booking_date + 'T00:00:00');
+      const dateStr = dateObj.toLocaleDateString('zh-MY', { month: 'short', day: 'numeric', weekday: 'short' });
+      const notesHtml = b.notes ? `<div class="card-notes">💬 ${escHtml(b.notes)}</div>` : '';
+
+      const actionBtns = [];
+      if (b.status !== 'pending') actionBtns.push(`<button class="action-btn btn-pending" onclick="updateStatus('${b.id}', 'pending')">待确认</button>`);
+      if (b.status !== 'confirmed') actionBtns.push(`<button class="action-btn btn-confirm" onclick="updateStatus('${b.id}', 'confirmed')">确认</button>`);
+      if (b.status !== 'completed') actionBtns.push(`<button class="action-btn btn-complete" onclick="updateStatus('${b.id}', 'completed')">完成</button>`);
+      if (b.status !== 'cancelled') actionBtns.push(`<button class="action-btn btn-cancel" onclick="updateStatus('${b.id}', 'cancelled')">取消</button>`);
+      actionBtns.push(`<button class="action-btn btn-delete" onclick="deleteBooking('${b.id}')">🗑 删除</button>`);
+
+      return `
+        <div class="booking-card status-${b.status}" id="card-${b.id}">
+          <div class="card-header">
+            <div class="customer-info">
+              <div class="name">${escHtml(b.customer_name)}</div>
+              <div class="phone">📞 ${escHtml(b.phone)}</div>
+            </div>
+            <span class="status-badge ${st.cls}">${st.label}</span>
+          </div>
+          <div class="card-details">
+            <div class="detail-item">
+              <div class="detail-label">日期</div>
+              <div class="detail-value">${dateStr}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">时间</div>
+              <div class="detail-value">${timeStr}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">人数 / 时长</div>
+              <div class="detail-value">${b.pax}人 / ${b.duration_hours}小时</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">金额</div>
+              <div class="detail-value amount-val">RM ${(b.amount || 0).toFixed(2)}</div>
+            </div>
+          </div>
+          ${notesHtml}
+          <div class="card-actions">${actionBtns.join('')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ---- UPDATE STATUS ----
+  async function updateStatus(id, status) {
+    const { error } = await db.from('bookings').update({ status }).eq('id', id);
+    if (error) { showToast('❌ 更新失败', true); return; }
+    const idx = allBookings.findIndex(b => b.id === id);
+    if (idx !== -1) allBookings[idx].status = status;
+    const labels = { pending: '待确认', confirmed: '已确认', completed: '已完成', cancelled: '已取消' };
+    showToast('✅ 已更新为：' + labels[status]);
+    updateStats();
+    filterBookings();
+  }
+
+  // ---- DELETE ----
+  async function deleteBooking(id) {
+    if (!confirm('确定要删除这条预约吗？')) return;
+    const { error } = await db.from('bookings').delete().eq('id', id);
+    if (error) { showToast('❌ 删除失败', true); return; }
+    allBookings = allBookings.filter(b => b.id !== id);
+    showToast('🗑 已删除');
+    updateStats();
+    filterBookings();
+  }
+
+  // ---- HELPERS ----
+  function getTodayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+  function getTomorrowStr() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  }
+  function getWeekDates() {
+    const now = new Date();
+    const day = now.getDay();
+    const diffToMon = (day === 0 ? -6 : 1 - day);
+    const mon = new Date(now);
+    mon.setDate(now.getDate() + diffToMon);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    return {
+      start: mon.toISOString().split('T')[0],
+      end: sun.toISOString().split('T')[0]
+    };
+  }
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '');
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 2500);
+  }
+</script>
+</body>
+</html>
