@@ -232,10 +232,7 @@
 
   // Init Supabase only if keys are set
   function initSupabase() {
-    if (SUPABASE_URL === 'https://drnbwxgapjrkovzdcjqg.supabase.co' || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRybmJ3eGdhcGpya292emRjanFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDg1MzksImV4cCI6MjA5NDc4NDUzOX0.n4oI8Ua13B5LCU4RowJlCjvdMcbBJSoDg1qVqp8_l4c') {
-      document.getElementById('configWarning').style.display = 'block';
-      return false;
-    }
+    
     try {
       db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       return true;
